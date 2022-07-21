@@ -22,6 +22,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/elastic/beats/v7/heartbeat/monitors/plugin"
 	"github.com/elastic/beats/v7/libbeat/version"
 	conf "github.com/elastic/elastic-agent-libs/config"
@@ -48,6 +49,8 @@ func create(
 	if err := cfg.Unpack(&config); err != nil {
 		return plugin.Plugin{}, err
 	}
+
+	authConfig := authorization.GetActiveAuthorization()
 
 	var body []byte
 	var enc contentEncoder
@@ -87,7 +90,7 @@ func create(
 		}
 
 		makeJob = func(urlStr string) (jobs.Job, error) {
-			return newHTTPMonitorHostJob(urlStr, &config, transport, enc, body, validator)
+			return newHTTPMonitorHostJob(urlStr, &config, authConfig, transport, enc, body, validator)
 		}
 	} else {
 		// preload TLS configuration
@@ -98,7 +101,7 @@ func create(
 		config.Transport.TLS = nil
 
 		makeJob = func(urlStr string) (jobs.Job, error) {
-			return newHTTPMonitorIPsJob(&config, urlStr, tls, enc, body, validator)
+			return newHTTPMonitorIPsJob(&config, authConfig, urlStr, tls, enc, body, validator)
 		}
 	}
 

@@ -32,6 +32,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/elastic/beats/v7/heartbeat/monitors/active/dialchain/tlsmeta"
 	"github.com/elastic/elastic-agent-libs/mapstr"
 
@@ -51,13 +52,14 @@ type requestFactory func() (*http.Request, error)
 func newHTTPMonitorHostJob(
 	addr string,
 	config *Config,
+	authConfig *authorization.Authorization,
 	transport http.RoundTripper,
 	enc contentEncoder,
 	body []byte,
 	validator multiValidator,
 ) (jobs.Job, error) {
 
-	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, enc) }
+	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, authConfig, enc) }
 
 	return jobs.MakeSimpleJob(func(event *beat.Event) error {
 		var redirects []string
@@ -83,6 +85,7 @@ func newHTTPMonitorHostJob(
 
 func newHTTPMonitorIPsJob(
 	config *Config,
+	authConfig *authorization.Authorization,
 	addr string,
 	tls *tlscommon.TLSConfig,
 	enc contentEncoder,
@@ -90,7 +93,7 @@ func newHTTPMonitorIPsJob(
 	validator multiValidator,
 ) (jobs.Job, error) {
 
-	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, enc) }
+	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, authConfig, enc) }
 
 	hostname, port, err := splitHostnamePort(addr)
 	if err != nil {
@@ -192,7 +195,7 @@ func createPingFactory(
 	})
 }
 
-func buildRequest(addr string, config *Config, enc contentEncoder) (*http.Request, error) {
+func buildRequest(addr string, config *Config, authConfig *authorization.Authorization, enc contentEncoder) (*http.Request, error) {
 	method := strings.ToUpper(config.Check.Request.Method)
 	request, err := http.NewRequestWithContext(context.TODO(), method, addr, nil)
 	if err != nil {
@@ -202,6 +205,8 @@ func buildRequest(addr string, config *Config, enc contentEncoder) (*http.Reques
 
 	if config.Username != "" {
 		request.SetBasicAuth(config.Username, config.Password)
+	} else if config.OAuthEnabled {
+		request.Header.Set("Authorization", authConfig.TokenType+" "+*authConfig.GetAccessToken())
 	}
 	for k, v := range config.Check.Request.SendHeaders {
 		// defining the Host header isn't enough. See https://github.com/golang/go/issues/7682

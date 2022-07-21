@@ -21,6 +21,7 @@
 package config
 
 import (
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/elastic/beats/v7/libbeat/autodiscover"
 	conf "github.com/elastic/elastic-agent-libs/config"
 )
@@ -33,6 +34,7 @@ type Config struct {
 	Scheduler      Scheduler            `config:"scheduler"`
 	Autodiscover   *autodiscover.Config `config:"autodiscover"`
 	Jobs           map[string]JobLimit  `config:"jobs"`
+	OAuthConfig    authorization.OAuth  `config:"oauth_configuration"`
 }
 
 type JobLimit struct {

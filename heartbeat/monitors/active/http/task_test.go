@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -160,12 +161,13 @@ func TestNonZeroRedirect(t *testing.T) {
 
 func TestRequestBuildingWithCustomHost(t *testing.T) {
 	var config = Config{}
+	var authorizationConfig = authorization.Authorization{}
 	var encoder = nilEncoder{}
 
 	config.Check.Request.SendHeaders = make(map[string]string)
 	config.Check.Request.SendHeaders["Host"] = "custom-host"
 
-	request, err := buildRequest("localhost", &config, encoder)
+	request, err := buildRequest("localhost", &config, &authorizationConfig, encoder)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, "custom-host", request.Host)
@@ -174,6 +176,7 @@ func TestRequestBuildingWithCustomHost(t *testing.T) {
 }
 
 func TestRequestBuildingWithExplicitUserAgent(t *testing.T) {
+	var authConfig = authorization.Authorization{}
 	expectedUserAgent := "some-user-agent"
 
 	var config = Config{
@@ -186,7 +189,7 @@ func TestRequestBuildingWithExplicitUserAgent(t *testing.T) {
 		},
 	}
 
-	request, err := buildRequest("localhost", &config, nilEncoder{})
+	request, err := buildRequest("localhost", &config, &authConfig, nilEncoder{})
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedUserAgent, request.Header.Get("User-Agent"))

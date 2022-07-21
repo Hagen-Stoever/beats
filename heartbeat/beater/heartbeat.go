@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/elastic/beats/v7/heartbeat/config"
 	"github.com/elastic/beats/v7/heartbeat/hbregistry"
 	"github.com/elastic/beats/v7/heartbeat/monitors"
@@ -48,6 +49,7 @@ type Heartbeat struct {
 	monitorReloader *cfgfile.Reloader
 	dynamicFactory  *monitors.RunnerFactory
 	autodiscover    *autodiscover.Autodiscover
+	authorization   *authorization.Authorization
 }
 
 // New creates a new heartbeat.
@@ -69,12 +71,15 @@ func New(b *beat.Beat, rawConfig *conf.C) (beat.Beater, error) {
 
 	scheduler := scheduler.Create(limit, hbregistry.SchedulerRegistry, location, jobConfig, parsedConfig.RunOnce)
 
+	authorization := authorization.LoadAuthorization(&parsedConfig.OAuthConfig)
+
 	bt := &Heartbeat{
 		done:      make(chan struct{}),
 		config:    parsedConfig,
 		scheduler: scheduler,
 		// dynamicFactory is the factory used for dynamic configs, e.g. autodiscover / reload
 		dynamicFactory: monitors.NewFactory(b.Info, scheduler.Add, plugin.GlobalPluginsReg, parsedConfig.RunOnce),
+		authorization:  authorization,
 	}
 	return bt, nil
 }

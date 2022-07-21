@@ -40,6 +40,8 @@ type Config struct {
 	Username string `config:"username"`
 	Password string `config:"password"`
 
+	OAuthEnabled bool `config:"oauth_enabled"`
+
 	// http(s) ping validation
 	Check checkConfig `config:"check"`
 
