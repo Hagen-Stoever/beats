@@ -60,7 +60,8 @@ func LoadAuthorization(config *OAuth) *Authorization {
 
 	status := checkConfig(config)
 	if status == Ok {
-		newAuth.server = newAuthorizationServer(config, &connector{}) // creates a new Object that retrieves automatically new Tokens.
+		var connector authorizationServerConnector = connector{}
+		newAuth.server = newAuthorizationServer(config, &connector) // creates a new Object that retrieves automatically new Tokens.
 	} else {
 		newAuth.server = new(AuthorizationServer)
 		newAuth.server.status = Unauthorized

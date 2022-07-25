@@ -17,13 +17,22 @@
 
 package authorization
 
-// Scheduler defines the syntax of a heartbeat.yml OAuth block
-type OAuth struct {
-	Url                   string      `config:"server_url"`
-	AuthBody              interface{} `config:"auth_body"`
-	AuthString            string      `config:"auth_string"`
-	RefreshTokenStructure string      `config:"refresh_token_structure"`
-	TokenType             string      `config:"token_type"`
-	RetryTime             int         `config:"retry_time_seconds"`
-	TokenExpireTime       int         `config:"token_expires_in"`
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestRetrieveToken_noBodyProvided(t *testing.T) {
+	url := "some.host.com"
+
+	uut := new(connector)
+
+	result, err, status := uut.retrieveToken("", nil, url)
+
+	assert.Nil(t, result)
+	assert.NotNil(t, err)
+
+	assert.Equal(t, "No Authorization-Body defined.", err.Error())
+	assert.Equal(t, Unauthorized, status)
 }

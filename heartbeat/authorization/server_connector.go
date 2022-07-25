@@ -27,27 +27,31 @@ import (
 	"github.com/elastic/elastic-agent-libs/logp"
 )
 
+// An interface that can be mocked
+type authorizationServerConnector interface {
+	retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string)
+	retrieveTokenWithRefreshToken(refreshTokenBody string, url string) (*http.Response, error)
+}
+
 // Contains all the functions that send HTTP-Requests.
 type connector struct{}
 
 // authString: a string containing the grantType and the credentials needed to retrieve a token
 // authBody: An Object containing the credentials needed to retrieve a Token
 // url: the Url of an Authorization-Server
-func (this *connector) retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string) {
+func (this connector) retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string) {
 	client := &http.Client{}
 	var request *http.Request
 	var err error
 
 	if authString != "" { // String
-		if request, err = http.NewRequest("POST", url, bytes.NewBuffer([]byte(authString))); err == nil {
-			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		}
+		request, _ = http.NewRequest("POST", url, bytes.NewBuffer([]byte(authString)))
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	} else if authBody != nil { // JSON
 		payloadBuf := new(bytes.Buffer)
 		json.NewEncoder(payloadBuf).Encode(authBody)
-		if req, err := http.NewRequest("POST", url, payloadBuf); err == nil {
-			req.Header.Set("Content-Type", "application/json")
-		}
+		req, _ := http.NewRequest("POST", url, payloadBuf)
+		req.Header.Set("Content-Type", "application/json")
 	} else {
 		return nil, errors.New("No Authorization-Body defined."), Unauthorized
 	}
@@ -65,12 +69,10 @@ func (this *connector) retrieveToken(authString string, authBody interface{}, ur
 // refreshTokenStructure: A string that represents a the body of a request, must have a placeholder in it to insert the refreshToken.
 // refreshToken: a string that is conform with rfc6749 https://datatracker.ietf.org/doc/html/rfc6749
 // url: the Url of an Authorization-Server
-func (this *connector) retrieveTokenWithRefreshToken(refreshTokenStructure string, refreshToken string, url string) (*http.Response, error) {
+func (this connector) retrieveTokenWithRefreshToken(refreshTokenBody string, url string) (*http.Response, error) {
 	client := &http.Client{}
 
-	body := fmt.Sprintf(refreshTokenStructure, refreshToken)
-
-	if req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(body))); err == nil {
+	if req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(refreshTokenBody))); err == nil {
 		logp.Info("Requesting a new Token with a refresh Token")
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
