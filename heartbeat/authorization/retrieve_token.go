@@ -18,20 +18,22 @@
 package authorization
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"net/http"
 	"time"
 
 	"github.com/elastic/elastic-agent-libs/logp"
 )
 
+//
+// This file handles the methods of authorization_server that concern the retrieval of tokens.
+//
+
 // Handles the response from the Authorization-Server and parses the data
-func retrieveTokenFromServer(authConfig *Authorization) (*AuthorizationToken, string, error) {
-	response, err, status := sendRequest(&authConfig.config)
+func (this *authorizationServer) retrieveTokenFromServer() (*authorizationToken, string, error) {
+	response, err, status := this.connector.retrieveToken(this.config.AuthString, this.config.AuthBody, this.config.Url)
 
 	if err != nil && status == Unauthorized { // There was an error creating a request
 		return nil, status, err
@@ -51,43 +53,14 @@ func retrieveTokenFromServer(authConfig *Authorization) (*AuthorizationToken, st
 		return nil, Error, err
 	}
 
-	access_token, refresh_token, access_duration := extractResponseBody(*data)
+	access_token, refresh_token, access_duration := this.extractResponseBody(*data)
 
 	if access_duration == 0 {
-		access_duration = authConfig.config.TokenExpireTime
+		access_duration = this.config.TokenExpireTime
 	}
 
 	return newAuthorizationToken(access_token, refresh_token, access_duration), Ok, nil
 
-}
-
-func sendRequest(config *OAuth) (*http.Response, error, string) {
-	client := &http.Client{}
-	if config.AuthString != "" { // String
-		if req, err := http.NewRequest("POST", config.Url, bytes.NewBuffer([]byte(config.AuthString))); err == nil {
-			logp.Info("Requesting a new Token with a String as Body")
-			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-			response, err := client.Do(req)
-			return response, err, Undefined
-		} else {
-			return nil, errors.New(fmt.Sprintf("Unable to send a request to %s ", config.Url)), Unauthorized
-		}
-	} else if config.AuthBody != nil { // JSON
-		payloadBuf := new(bytes.Buffer)
-		json.NewEncoder(payloadBuf).Encode(config.AuthBody)
-		if req, err := http.NewRequest("POST", config.Url, payloadBuf); err == nil {
-			logp.Info("Requesting a new Token with a JSON-Body")
-			req.Header.Set("Content-Type", "application/json")
-
-			response, err := client.Do(req)
-			return response, err, Undefined
-		} else {
-			return nil, errors.New(fmt.Sprintf("Unable to send a request to %s ", config.Url)), Unauthorized
-		}
-	}
-
-	return nil, errors.New("No Authorization-Body defined."), Unauthorized
 }
 
 // Transforms the JSON-Body of a http Request to a map
@@ -107,7 +80,7 @@ func parseResponseBodyToMap(response io.ReadCloser) (*map[string]interface{}, er
 
 // Fields for the response are defined in the RFC 6749 https://datatracker.ietf.org/doc/html/rfc6749
 // If a field is not in the response, then Ignore that field and let the rest of the code handle it.
-func extractResponseBody(body map[string]interface{}) (string, string, int) {
+func (this *authorizationServer) extractResponseBody(body map[string]interface{}) (string, string, int) {
 	var access_token, refresh_token string
 	var access_duration int
 
@@ -124,15 +97,15 @@ func extractResponseBody(body map[string]interface{}) (string, string, int) {
 	return access_token, refresh_token, access_duration
 }
 
-func retrySendRequest(auth *Authorization) {
+func (this *authorizationServer) retrySendRequest(auth *Authorization) {
 	duration := time.Duration(auth.config.RetryTime)
 	time.Sleep(duration * time.Second)
 
-	token, status, err := retrieveTokenFromServer(auth)
+	token, status, err := this.retrieveTokenFromServer()
 
-	auth.status = status
+	this.status = status
 	if status == Error {
-		go retrySendRequest(auth)
+		go this.retrySendRequest(auth)
 	}
 
 	if err != nil {
@@ -140,7 +113,7 @@ func retrySendRequest(auth *Authorization) {
 	}
 
 	if status == Ok && token != nil {
-		auth.status = status
-		auth.token = *token
+		this.status = status
+		this.token = *token
 	}
 }

@@ -18,7 +18,6 @@
 package authorization
 
 import (
-	"fmt"
 	"net/url"
 
 	"github.com/elastic/elastic-agent-libs/logp"
@@ -26,30 +25,21 @@ import (
 
 var activeAuthorization *Authorization
 
-func GetActiveAuthorization() *Authorization {
-	return activeAuthorization
+func GetAuthorizationServer() *authorizationServer {
+	return activeAuthorization.server
 }
 
-const (
-	Ok           string = "2XX" // A Token can be retrieved
-	Unauthorized        = "4XX" // A Token can not be retrieved, because something was incorrectly configured
-	Error               = "5XX" // A Token could not be retrieved, because the server has an error, try to retry later
-	Undefined           = "XXX"
-)
-
 type Authorization struct {
-	token     AuthorizationToken
-	config    OAuth
-	status    string
-	TokenType string
+	config OAuth
+	server *authorizationServer
 }
 
 func (this *Authorization) IsActive() bool {
-	return this.status == Ok
+	return this.server.status == Ok
 }
 
 func (this *Authorization) GetAccessToken() *string {
-	return &this.token.accessToken
+	return &this.server.token.accessToken
 }
 
 // Creates a new Instance of Authorization
@@ -66,34 +56,43 @@ func LoadAuthorization(config *OAuth) *Authorization {
 	if newAuth.config.TokenType == "" {
 		newAuth.config.TokenType = "Bearer"
 	}
+	// Default value for TokenExpireTime is 0
 
-	urlStatus := checkUrl(newAuth)
-
-	if urlStatus == Ok { // Get a Token from the Server
-		handleToken(newAuth)
+	status := checkConfig(config)
+	if status == Ok {
+		newAuth.server = newAuthorizationServer(config, &connector{}) // creates a new Object that retrieves automatically new Tokens.
 	} else {
+		newAuth.server = new(authorizationServer)
+		newAuth.server.status = Unauthorized
 		logp.Warn("Invalid Config, disabling OAuth-Feature")
-		newAuth.status = Unauthorized
 	}
 
 	return newAuth
 }
 
-func checkUrl(auth *Authorization) string {
-	url, err := url.Parse(auth.config.Url)
+func checkConfig(config *OAuth) string {
+	if config.RefreshTokenStructure == "" {
+		logp.Warn("No Structure for the Refresh-Token provided, ignoring refresh token")
+	}
 
-	if err != nil {
-		fmt.Print()
-		logp.Warn("Invalid URL for Authorization-Server; Error: " + err.Error())
-		return Error
-	} else if url.Host == "" {
-		logp.Warn("Invalid URL for Authorization-Server; The host is missing - " + auth.config.Url)
-		return Error
-	} else if url.Scheme == "" {
-		logp.Warn("No Scheme provided for Authorization-Server, using https as default")
-		url.Scheme = "https"
-		auth.config.Url = url.String()
+	if urlStatus := checkUrl(config.Url); urlStatus != Ok {
+		return Unauthorized
+	}
+
+	if config.AuthString == "" && config.AuthBody == nil {
+		return Unauthorized
 	}
 
 	return Ok
+}
+
+func checkUrl(providedUrl string) string {
+	_, err := url.ParseRequestURI(providedUrl)
+
+	if err != nil {
+		logp.Warn("Invalid URL for Authorization-Server; Error: " + err.Error())
+		return Unauthorized
+	} else {
+		return Ok
+	}
 }

@@ -18,48 +18,50 @@
 package authorization
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/elastic/elastic-agent-libs/logp"
 )
 
-func refreshToken(auth *Authorization) {
-	if auth.token.accessToken != "" && auth.config.RefreshTokenStructure != "" {
-		token, err := retrieveRefreshTokenFromServer(auth)
+//
+// This file handles the methods of authorization_server that concern the retrieval of tokens through refresh tokens.
+//
+
+func (this *authorizationServer) refreshToken() {
+	if this.token.accessToken != "" && this.config.RefreshTokenStructure != "" {
+		token, err := this.retrieveRefreshTokenFromServer()
 
 		if err != nil { // Refresh Token failed, try new Token
 			logp.Warn(err.Error())
-			getTokenAndHandleStatus(auth)
+			this.getTokenAndHandleStatus()
 
 		} else {
-			auth.status = Ok
-			auth.token.accessToken = token.accessToken
-			auth.token.refreshToken = token.refreshToken
+			this.status = Ok
+			this.token.accessToken = token.accessToken
+			this.token.refreshToken = token.refreshToken
 		}
 	} else {
-		getTokenAndHandleStatus(auth)
+		this.getTokenAndHandleStatus()
 	}
 }
 
-func getTokenAndHandleStatus(auth *Authorization) {
-	token, status, err := retrieveTokenFromServer(auth)
-	auth.status = status
+func (this *authorizationServer) getTokenAndHandleStatus() {
+	token, status, err := this.retrieveTokenFromServer()
+	this.status = status
 
 	if status == Ok {
-		auth.token = *token
+		this.token = *token
 	} else if status == Error {
-		logp.Warn(fmt.Sprintf("Could not retrieve a token at this time; Error:  %v", err))
+		logp.Warn(fmt.Sprintf("Could not retrieve a token at this moment; Error:  %v", err))
 	} else {
 		logp.Warn("Unable to retrieve a token, Invalid Config and/or Authorization")
 	}
 }
 
 // Handles the response from the Authorization-Server and parses the data
-func retrieveRefreshTokenFromServer(auth *Authorization) (*AuthorizationToken, error) {
-	response, err := sendRefreshTokenRequest(auth)
+func (this *authorizationServer) retrieveRefreshTokenFromServer() (*authorizationToken, error) {
+	response, err := this.connector.retrieveTokenWithRefreshToken(this.config.AuthString, this.token.refreshToken, this.config.Url)
 
 	if err != nil { // There was an error creating a request
 		return nil, err
@@ -75,23 +77,8 @@ func retrieveRefreshTokenFromServer(auth *Authorization) (*AuthorizationToken, e
 		return nil, err
 	}
 
-	access_token, refresh_token, access_duration := extractResponseBody(*data)
+	access_token, refresh_token, access_duration := this.extractResponseBody(*data)
 
 	return newAuthorizationToken(access_token, refresh_token, access_duration), nil
 
-}
-
-func sendRefreshTokenRequest(auth *Authorization) (*http.Response, error) {
-	client := &http.Client{}
-
-	body := fmt.Sprintf(auth.config.RefreshTokenStructure, auth.token.refreshToken)
-
-	if req, err := http.NewRequest("POST", auth.config.Url, bytes.NewBuffer([]byte(body))); err == nil {
-		logp.Info("Requesting a new Token with a String as Body")
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		return client.Do(req)
-	} else {
-		return nil, errors.New("Unable to parse the refresh token")
-	}
 }

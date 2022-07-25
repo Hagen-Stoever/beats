@@ -17,34 +17,19 @@
 
 package authorization
 
-import "time"
-
 // This structure saves the information of a token
-type AuthorizationToken struct {
-	accessToken          string
-	refreshToken         string
-	expiresIn            int
-	accessTokenExpiresAt time.Time
+type authorizationToken struct {
+	accessToken  string
+	refreshToken string
+	expiresIn    int
 }
 
-// If the lifespan of a token is 0 or less, then the token effectivly will never expire
-// The unit for the lifespan is second
-func newAuthorizationToken(access_token string, refresh_token string, expiresIn int) *AuthorizationToken {
-	newToken := new(AuthorizationToken)
+// A structure to save the information of an OAuth-AuthorizationToken
+func newAuthorizationToken(access_token string, refresh_token string, expiresIn int) *authorizationToken {
+	newToken := new(authorizationToken)
 	newToken.accessToken = access_token
 	newToken.refreshToken = refresh_token
 	newToken.expiresIn = expiresIn
 
-	now := time.Now()
-	if expiresIn > 0 {
-		newToken.accessTokenExpiresAt = now.Add(time.Second * time.Duration(expiresIn))
-	} else {
-		newToken.accessTokenExpiresAt = time.Unix(1<<63-62135596801, 999999999) // maximum time value https://stackoverflow.com/a/32620397 by @cce
-	}
-
 	return newToken
-}
-
-func (this AuthorizationToken) isExpired() bool {
-	return this.accessTokenExpiresAt.Before(time.Now())
 }
