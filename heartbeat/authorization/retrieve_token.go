@@ -32,7 +32,7 @@ import (
 //
 
 // Handles the response from the Authorization-Server and parses the data
-func (this *authorizationServer) retrieveTokenFromServer() (*authorizationToken, string, error) {
+func (this *AuthorizationServer) retrieveTokenFromServer() (*authorizationToken, string, error) {
 	response, err, status := this.connector.retrieveToken(this.config.AuthString, this.config.AuthBody, this.config.Url)
 
 	if err != nil && status == Unauthorized { // There was an error creating a request
@@ -80,7 +80,7 @@ func parseResponseBodyToMap(response io.ReadCloser) (*map[string]interface{}, er
 
 // Fields for the response are defined in the RFC 6749 https://datatracker.ietf.org/doc/html/rfc6749
 // If a field is not in the response, then Ignore that field and let the rest of the code handle it.
-func (this *authorizationServer) extractResponseBody(body map[string]interface{}) (string, string, int) {
+func (this *AuthorizationServer) extractResponseBody(body map[string]interface{}) (string, string, int) {
 	var access_token, refresh_token string
 	var access_duration int
 
@@ -97,7 +97,7 @@ func (this *authorizationServer) extractResponseBody(body map[string]interface{}
 	return access_token, refresh_token, access_duration
 }
 
-func (this *authorizationServer) retrySendRequest(auth *Authorization) {
+func (this *AuthorizationServer) retrySendRequest(auth *Authorization) {
 	duration := time.Duration(auth.config.RetryTime)
 	time.Sleep(duration * time.Second)
 

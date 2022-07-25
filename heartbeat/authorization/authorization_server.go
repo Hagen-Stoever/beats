@@ -2,7 +2,8 @@ package authorization
 
 import "time"
 
-type authorizationServer struct {
+type AuthorizationServer struct {
+	Type      string
 	token     authorizationToken
 	status    string
 	connector connector
@@ -18,8 +19,8 @@ const (
 )
 
 // this Object does not validate the given parameter
-func newAuthorizationServer(auth *OAuth, connector *connector) *authorizationServer {
-	server := new(authorizationServer)
+func newAuthorizationServer(auth *OAuth, connector *connector) *AuthorizationServer {
+	server := new(AuthorizationServer)
 
 	server.status = Ok
 	server.connector = *connector
@@ -32,7 +33,12 @@ func newAuthorizationServer(auth *OAuth, connector *connector) *authorizationSer
 	return server
 }
 
-func (this *authorizationServer) updateTokenPeriodically() {
+func (this *AuthorizationServer) GetAuthorizationHeader() string {
+	return this.config.TokenType + " " + this.token.accessToken
+
+}
+
+func (this *AuthorizationServer) updateTokenPeriodically() {
 	const minimumSleepTime int = 10
 	const expirationBuffer int = 10
 
@@ -57,6 +63,13 @@ func (this *authorizationServer) updateTokenPeriodically() {
 		}
 	}
 
+}
+
+// Returns true if this instance can theoretically obtain an Token from the Authorization Server
+// but that does not mean that an access Token will be valid at a given moment.
+// If an Authorization-Server returned 500, this will still be active.
+func (this *AuthorizationServer) IsActive() bool {
+	return this.status == Ok || this.status == Error
 }
 
 func maxOf(vars ...int) int {

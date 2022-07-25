@@ -28,7 +28,7 @@ import (
 // This file handles the methods of authorization_server that concern the retrieval of tokens through refresh tokens.
 //
 
-func (this *authorizationServer) refreshToken() {
+func (this *AuthorizationServer) refreshToken() {
 	if this.token.accessToken != "" && this.config.RefreshTokenStructure != "" {
 		token, err := this.retrieveRefreshTokenFromServer()
 
@@ -46,7 +46,7 @@ func (this *authorizationServer) refreshToken() {
 	}
 }
 
-func (this *authorizationServer) getTokenAndHandleStatus() {
+func (this *AuthorizationServer) getTokenAndHandleStatus() {
 	token, status, err := this.retrieveTokenFromServer()
 	this.status = status
 
@@ -60,7 +60,7 @@ func (this *authorizationServer) getTokenAndHandleStatus() {
 }
 
 // Handles the response from the Authorization-Server and parses the data
-func (this *authorizationServer) retrieveRefreshTokenFromServer() (*authorizationToken, error) {
+func (this *AuthorizationServer) retrieveRefreshTokenFromServer() (*authorizationToken, error) {
 	response, err := this.connector.retrieveTokenWithRefreshToken(this.config.AuthString, this.token.refreshToken, this.config.Url)
 
 	if err != nil { // There was an error creating a request

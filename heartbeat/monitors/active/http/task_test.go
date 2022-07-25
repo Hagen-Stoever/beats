@@ -161,13 +161,13 @@ func TestNonZeroRedirect(t *testing.T) {
 
 func TestRequestBuildingWithCustomHost(t *testing.T) {
 	var config = Config{}
-	var authorizationConfig = authorization.Authorization{}
+	var server = authorization.AuthorizationServer{}
 	var encoder = nilEncoder{}
 
 	config.Check.Request.SendHeaders = make(map[string]string)
 	config.Check.Request.SendHeaders["Host"] = "custom-host"
 
-	request, err := buildRequest("localhost", &config, &authorizationConfig, encoder)
+	request, err := buildRequest("localhost", &config, &server, encoder)
 
 	if assert.NoError(t, err) {
 		assert.Equal(t, "custom-host", request.Host)
@@ -176,7 +176,7 @@ func TestRequestBuildingWithCustomHost(t *testing.T) {
 }
 
 func TestRequestBuildingWithExplicitUserAgent(t *testing.T) {
-	var authConfig = authorization.Authorization{}
+	var server = authorization.AuthorizationServer{}
 	expectedUserAgent := "some-user-agent"
 
 	var config = Config{
@@ -189,7 +189,7 @@ func TestRequestBuildingWithExplicitUserAgent(t *testing.T) {
 		},
 	}
 
-	request, err := buildRequest("localhost", &config, &authConfig, nilEncoder{})
+	request, err := buildRequest("localhost", &config, &server, nilEncoder{})
 
 	require.NoError(t, err)
 	assert.Equal(t, expectedUserAgent, request.Header.Get("User-Agent"))

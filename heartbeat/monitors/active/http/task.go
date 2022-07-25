@@ -52,7 +52,7 @@ type requestFactory func() (*http.Request, error)
 func newHTTPMonitorHostJob(
 	addr string,
 	config *Config,
-	authConfig *authorization.Authorization,
+	authConfig *authorization.AuthorizationServer,
 	transport http.RoundTripper,
 	enc contentEncoder,
 	body []byte,
@@ -85,7 +85,7 @@ func newHTTPMonitorHostJob(
 
 func newHTTPMonitorIPsJob(
 	config *Config,
-	authConfig *authorization.Authorization,
+	authServer *authorization.AuthorizationServer,
 	addr string,
 	tls *tlscommon.TLSConfig,
 	enc contentEncoder,
@@ -93,7 +93,7 @@ func newHTTPMonitorIPsJob(
 	validator multiValidator,
 ) (jobs.Job, error) {
 
-	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, authConfig, enc) }
+	var reqFactory requestFactory = func() (*http.Request, error) { return buildRequest(addr, config, authServer, enc) }
 
 	hostname, port, err := splitHostnamePort(addr)
 	if err != nil {
@@ -195,7 +195,7 @@ func createPingFactory(
 	})
 }
 
-func buildRequest(addr string, config *Config, authConfig *authorization.Authorization, enc contentEncoder) (*http.Request, error) {
+func buildRequest(addr string, config *Config, authServer *authorization.AuthorizationServer, enc contentEncoder) (*http.Request, error) {
 	method := strings.ToUpper(config.Check.Request.Method)
 	request, err := http.NewRequestWithContext(context.TODO(), method, addr, nil)
 	if err != nil {
@@ -206,7 +206,7 @@ func buildRequest(addr string, config *Config, authConfig *authorization.Authori
 	if config.Username != "" {
 		request.SetBasicAuth(config.Username, config.Password)
 	} else if config.OAuthEnabled {
-		request.Header.Set("Authorization", authConfig.TokenType+" "+*authConfig.GetAccessToken())
+		request.Header.Set("Authorization", authServer.GetAuthorizationHeader())
 	}
 	for k, v := range config.Check.Request.SendHeaders {
 		// defining the Host header isn't enough. See https://github.com/golang/go/issues/7682

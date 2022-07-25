@@ -25,13 +25,13 @@ import (
 
 var activeAuthorization *Authorization
 
-func GetAuthorizationServer() *authorizationServer {
+func GetAuthorizationServer() *AuthorizationServer {
 	return activeAuthorization.server
 }
 
 type Authorization struct {
 	config OAuth
-	server *authorizationServer
+	server *AuthorizationServer
 }
 
 func (this *Authorization) IsActive() bool {
@@ -62,7 +62,7 @@ func LoadAuthorization(config *OAuth) *Authorization {
 	if status == Ok {
 		newAuth.server = newAuthorizationServer(config, &connector{}) // creates a new Object that retrieves automatically new Tokens.
 	} else {
-		newAuth.server = new(authorizationServer)
+		newAuth.server = new(AuthorizationServer)
 		newAuth.server.status = Unauthorized
 		logp.Warn("Invalid Config, disabling OAuth-Feature")
 	}

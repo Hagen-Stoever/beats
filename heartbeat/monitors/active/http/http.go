@@ -50,7 +50,7 @@ func create(
 		return plugin.Plugin{}, err
 	}
 
-	authConfig := authorization.GetActiveAuthorization()
+	authConfig := authorization.GetAuthorizationServer()
 
 	var body []byte
 	var enc contentEncoder
