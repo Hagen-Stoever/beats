@@ -19,7 +19,9 @@ package authorization
 
 import (
 	"net/url"
+	"time"
 
+	"github.com/elastic/beats/v7/libbeat/beat"
 	"github.com/elastic/elastic-agent-libs/logp"
 )
 
@@ -30,8 +32,9 @@ func GetAuthorizationServer() *AuthorizationServer {
 }
 
 type Authorization struct {
-	config OAuth
-	server *AuthorizationServer
+	config    OAuth
+	server    *AuthorizationServer
+	publisher beat.Client
 }
 
 func (this *Authorization) IsActive() bool {
@@ -42,12 +45,24 @@ func (this *Authorization) GetAccessToken() *string {
 	return &this.server.token.accessToken
 }
 
+func (this *Authorization) SendServerStatus() {
+	fields := map[string]interface{}{
+		"connection_status": this.server.status,
+		//"@timestamp":        common.Time(time.Now()),
+		//"type":       b.Name, name of the beat
+	}
+	event := beat.Event{Timestamp: time.Now(), Fields: fields, TimeSeries: false}
+
+	this.publisher.Publish(event)
+}
+
 // Creates a new Instance of Authorization
-func LoadAuthorization(config *OAuth) *Authorization {
+func LoadAuthorization(config *OAuth, publisher beat.Pipeline) *Authorization {
 	newAuth := new(Authorization)
 	activeAuthorization = newAuth
 
 	newAuth.config = *config
+	newAuth.publisher, _ = publisher.Connect()
 
 	// checking config for default values
 	if newAuth.config.RetryTime == 0 {
@@ -68,6 +83,7 @@ func LoadAuthorization(config *OAuth) *Authorization {
 		logp.Warn("Invalid Config, disabling OAuth-Feature")
 	}
 
+	newAuth.SendServerStatus()
 	return newAuth
 }
 

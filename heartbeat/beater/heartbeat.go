@@ -71,7 +71,7 @@ func New(b *beat.Beat, rawConfig *conf.C) (beat.Beater, error) {
 
 	scheduler := scheduler.Create(limit, hbregistry.SchedulerRegistry, location, jobConfig, parsedConfig.RunOnce)
 
-	authorization := authorization.LoadAuthorization(&parsedConfig.OAuthConfig)
+	authorization := authorization.LoadAuthorization(&parsedConfig.OAuthConfig, b.Publisher)
 
 	bt := &Heartbeat{
 		done:      make(chan struct{}),

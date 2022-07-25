@@ -20,10 +20,10 @@ type AuthorizationServer struct {
 }
 
 const (
-	Ok           string = "2XX" // A Token can be retrieved
-	Unauthorized        = "4XX" // A Token can not be retrieved, because something was incorrectly configured
-	Error               = "5XX" // A Token could not be retrieved, because the server has an error, try to retry later
-	Undefined           = "XXX"
+	Ok           string = "Running"      // A Token can be retrieved
+	Unauthorized        = "Unauthorized" // A Token can not be retrieved, because something was incorrectly configured
+	Error               = "Server_Error" // A Token could not be retrieved, because the server has an error, try to retry later
+	Undefined           = "Error"
 )
 
 // this Object does not validate the given parameter
@@ -79,6 +79,8 @@ func (this *AuthorizationServer) updateTokenPeriodically() {
 		} else {
 			this.getTokenAndHandleStatus()
 		}
+
+		activeAuthorization.SendServerStatus()
 	}
 
 }

@@ -9,7 +9,7 @@ import (
 func TestLoadAuthorization_InactiveInvalidURL(t *testing.T) {
 	config := OAuth{Url: "notAUrl", AuthString: "someString"}
 
-	result := LoadAuthorization(&config)
+	result := LoadAuthorization(&config, nil)
 	assert.Equal(t, false, result.IsActive())
 	assert.Equal(t, "", *result.GetAccessToken())
 }
@@ -17,7 +17,7 @@ func TestLoadAuthorization_InactiveInvalidURL(t *testing.T) {
 func TestLoadAuthorization_InactiveNoAuthorization(t *testing.T) {
 	config := OAuth{Url: "http://example.com"}
 
-	result := LoadAuthorization(&config)
+	result := LoadAuthorization(&config, nil)
 	assert.Equal(t, false, result.IsActive())
 	assert.Equal(t, "", *result.GetAccessToken())
 }
