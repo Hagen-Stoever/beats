@@ -40,7 +40,6 @@ type connector struct{}
 // authBody: An Object containing the credentials needed to retrieve a Token
 // url: the Url of an Authorization-Server
 func (this connector) retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string) {
-	client := &http.Client{}
 	var request *http.Request
 	var err error
 
@@ -50,8 +49,8 @@ func (this connector) retrieveToken(authString string, authBody interface{}, url
 	} else if authBody != nil { // JSON
 		payloadBuf := new(bytes.Buffer)
 		json.NewEncoder(payloadBuf).Encode(authBody)
-		req, _ := http.NewRequest("POST", url, payloadBuf)
-		req.Header.Set("Content-Type", "application/json")
+		request, _ = http.NewRequest("POST", url, payloadBuf)
+		request.Header.Set("Content-Type", "application/json")
 	} else {
 		return nil, errors.New("No Authorization-Body defined."), Unauthorized
 	}
@@ -60,10 +59,10 @@ func (this connector) retrieveToken(authString string, authBody interface{}, url
 		return nil, errors.New(fmt.Sprintf("Unable to send a request to %s ", url)), Unauthorized
 	} else {
 		logp.Info("Requesting a new Token.")
+		client := &http.Client{}
 		response, err := client.Do(request)
 		return response, err, Undefined
 	}
-
 }
 
 // refreshTokenStructure: A string that represents a the body of a request, must have a placeholder in it to insert the refreshToken.

@@ -47,12 +47,11 @@ func (this *Authorization) GetAccessToken() *string {
 
 func (this *Authorization) SendServerStatus() {
 	fields := map[string]interface{}{
-		"connection_status": this.server.status,
+		"server_connection_status": this.server.status,
 		//"@timestamp":        common.Time(time.Now()),
 		//"type":       b.Name, name of the beat
 	}
 	event := beat.Event{Timestamp: time.Now(), Fields: fields, TimeSeries: false}
-
 	this.publisher.Publish(event)
 }
 
@@ -84,6 +83,7 @@ func LoadAuthorization(config *OAuth, publisher beat.Pipeline) *Authorization {
 	}
 
 	newAuth.SendServerStatus()
+	logp.Info("Finished setting up authorization")
 	return newAuth
 }
 
