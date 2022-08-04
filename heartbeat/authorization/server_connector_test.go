@@ -28,7 +28,7 @@ func TestRetrieveToken_noBodyProvided(t *testing.T) {
 
 	uut := new(connector)
 
-	result, err, status := uut.retrieveToken("", nil, url)
+	result, err, status := uut.retrieveToken("", nil, url, "")
 
 	assert.Nil(t, result)
 	assert.NotNil(t, err)

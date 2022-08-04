@@ -1,3 +1,20 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
 package authorization
 
 import (
@@ -43,6 +60,7 @@ func newAuthorizationServer(auth *OAuth, connector *authorizationServerConnector
 
 // retuns the value of an Authorization-Header, i.e. tokenType and token
 func (this *AuthorizationServer) GetAuthorizationHeader() string {
+	logp.Info("Requesting a token: " + this.token.accessToken)
 	return this.config.TokenType + " " + this.token.accessToken
 
 }
@@ -91,7 +109,7 @@ func (this *AuthorizationServer) updateTokenPeriodically() {
 
 // Handles the response from the Authorization-Server and parses the data
 func (this *AuthorizationServer) retrieveTokenFromServer() (*authorizationToken, string, error) {
-	response, err, status := this.connector.retrieveToken(this.config.AuthString, this.config.AuthBody, this.config.Url)
+	response, err, status := this.connector.retrieveToken(this.config.AuthString, this.config.AuthBody, this.config.Url, this.config.CertificatePath)
 
 	if err != nil && status == Unauthorized { // There was an error creating a request
 		return nil, status, err
@@ -150,6 +168,7 @@ func (this *AuthorizationServer) getTokenAndHandleStatus() {
 
 	if status == Ok {
 		this.token = *token
+		logp.Info("Saving Token: " + token.accessToken)
 	} else if status == Error {
 		logp.Warn(fmt.Sprintf("Could not retrieve a token at this moment; Error:  %v", err))
 	} else {
@@ -160,7 +179,7 @@ func (this *AuthorizationServer) getTokenAndHandleStatus() {
 // Handles the response from the Authorization-Server and parses the data
 func (this *AuthorizationServer) retrieveRefreshTokenFromServer() (*authorizationToken, error) {
 	body := fmt.Sprintf(this.config.AuthString, this.token.refreshToken)
-	response, err := this.connector.retrieveTokenWithRefreshToken(body, this.config.Url)
+	response, err := this.connector.retrieveTokenWithRefreshToken(body, this.config.Url, this.config.CertificatePath)
 
 	if err != nil { // There was an error creating a request
 		return nil, err

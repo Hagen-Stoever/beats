@@ -19,9 +19,12 @@ package authorization
 
 import (
 	"bytes"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/elastic/elastic-agent-libs/logp"
@@ -29,8 +32,8 @@ import (
 
 // An interface that can be mocked
 type authorizationServerConnector interface {
-	retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string)
-	retrieveTokenWithRefreshToken(refreshTokenBody string, url string) (*http.Response, error)
+	retrieveToken(authString string, authBody interface{}, url string, certPath string) (*http.Response, error, string)
+	retrieveTokenWithRefreshToken(refreshTokenBody string, url string, certPath string) (*http.Response, error)
 }
 
 // Contains all the functions that send HTTP-Requests.
@@ -39,7 +42,7 @@ type connector struct{}
 // authString: a string containing the grantType and the credentials needed to retrieve a token
 // authBody: An Object containing the credentials needed to retrieve a Token
 // url: the Url of an Authorization-Server
-func (this connector) retrieveToken(authString string, authBody interface{}, url string) (*http.Response, error, string) {
+func (this connector) retrieveToken(authString string, authBody interface{}, url string, certPath string) (*http.Response, error, string) {
 	var request *http.Request
 	var err error
 
@@ -59,7 +62,14 @@ func (this connector) retrieveToken(authString string, authBody interface{}, url
 		return nil, errors.New(fmt.Sprintf("Unable to send a request to %s ", url)), Unauthorized
 	} else {
 		logp.Info("Requesting a new Token.")
-		client := &http.Client{}
+		cert := loadCertificate(certPath)
+		client := &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs: cert,
+				},
+			},
+		}
 		response, err := client.Do(request)
 		return response, err, Undefined
 	}
@@ -68,8 +78,15 @@ func (this connector) retrieveToken(authString string, authBody interface{}, url
 // refreshTokenStructure: A string that represents a the body of a request, must have a placeholder in it to insert the refreshToken.
 // refreshToken: a string that is conform with rfc6749 https://datatracker.ietf.org/doc/html/rfc6749
 // url: the Url of an Authorization-Server
-func (this connector) retrieveTokenWithRefreshToken(refreshTokenBody string, url string) (*http.Response, error) {
-	client := &http.Client{}
+func (this connector) retrieveTokenWithRefreshToken(refreshTokenBody string, url string, certPath string) (*http.Response, error) {
+	cert := loadCertificate(certPath)
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: cert,
+			},
+		},
+	}
 
 	if req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(refreshTokenBody))); err == nil {
 		logp.Info("Requesting a new Token with a refresh Token")
@@ -79,4 +96,16 @@ func (this connector) retrieveTokenWithRefreshToken(refreshTokenBody string, url
 	} else {
 		return nil, errors.New("Unable to parse the refresh token")
 	}
+}
+
+func loadCertificate(certPath string) *x509.CertPool {
+	caCert, err := ioutil.ReadFile(certPath)
+	if err != nil {
+		logp.Warn("Unable to load the certificate file while requesting a token", err)
+	}
+
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	return caCertPool
 }

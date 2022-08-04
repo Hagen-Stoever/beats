@@ -41,10 +41,6 @@ func (this *Authorization) IsActive() bool {
 	return this.server.status == Ok
 }
 
-func (this *Authorization) GetAccessToken() *string {
-	return &this.server.token.accessToken
-}
-
 func (this *Authorization) SendServerStatus() {
 	fields := map[string]interface{}{
 		"server_connection_status": this.server.status,

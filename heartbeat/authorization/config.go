@@ -26,4 +26,5 @@ type OAuth struct {
 	TokenType             string      `config:"token_type"`
 	RetryTime             int         `config:"retry_time_seconds"`
 	TokenExpireTime       int         `config:"token_expires_in"`
+	CertificatePath       string      `config:"certificate"`
 }

@@ -25,8 +25,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/elastic/beats/v7/heartbeat/authorization"
 	"github.com/stretchr/testify/require"
+
+	"github.com/elastic/beats/v7/heartbeat/authorization"
 
 	"github.com/stretchr/testify/assert"
 )
