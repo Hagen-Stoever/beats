@@ -17,7 +17,7 @@
 
 package authorization
 
-// Scheduler defines the syntax of a heartbeat.yml OAuth block
+// OAuth defines the syntax of a heartbeat.yml oauth_configuration block
 type OAuth struct {
 	Url                   string      `config:"server_url"`
 	AuthBody              interface{} `config:"auth_body"`

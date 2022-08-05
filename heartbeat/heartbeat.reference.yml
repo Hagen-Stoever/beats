@@ -264,6 +264,41 @@ heartbeat.jobs:
   #http.limit: 10
   #tcp.limit: 10
   #icmp.limit: 10
+  
+  
+# ============================= OAuth Authorization ============================
+heartbeat.oauth_configuration:
+  # A Json object containing the credentials to retrieve an Token.
+  # Ignored if auth_string is provided
+  # auth_body: { "Password": "${PASSWORD}", "Username": "exampleUser" }
+  
+  # Used for sending credentials as a string, standard for OAuth
+  # auth_string: grant_type=password&username=johndoe&password=${PASSWORD}
+
+  # A String containing the credentials needed for requesting a new Token, via a 
+  # refresh token provided at runtime, thus a placeholder must be included in the string
+  # refresh_token_structure: grant_type=refresh_token&client_id=&{ID}&refresh_token=%s
+  
+  # When the authorization Server response with an 5XX Error, this indicates how long 
+  # Heartbeat should wait before trying again, default is 60
+  # retry_time_seconds: 60
+
+  # It has to be a fully qualified URL, including scheme, host and path to the token endpoint
+  # server_url: http://myServer:5000/auth/session
+
+  # If an access token can expire, but a server does not provide an expires_in field, this 
+  # value will be used to determine when to refresh the token
+  # The default is 0, 0 means it will never expire (or any other number below 0)
+  # token_expires_in: 0
+
+  # Indicates the type of access token provided by the server
+  # Default is Bearer
+  # token_type: Bearer
+
+  # Link to a certificate file, when the authorization server uses TLS/SSL
+  # certificate: /usr/share/heartbeat/ca.cert
+  
+  
 # ================================== General ===================================
 
 # The name of the shipper that publishes the network data. It can be used to group

@@ -60,7 +60,6 @@ func newAuthorizationServer(auth *OAuth, connector *authorizationServerConnector
 
 // retuns the value of an Authorization-Header, i.e. tokenType and token
 func (this *AuthorizationServer) GetAuthorizationHeader() string {
-	logp.Info("Requesting a token: " + this.token.accessToken)
 	return this.config.TokenType + " " + this.token.accessToken
 
 }
@@ -168,7 +167,6 @@ func (this *AuthorizationServer) getTokenAndHandleStatus() {
 
 	if status == Ok {
 		this.token = *token
-		logp.Info("Saving Token: " + token.accessToken)
 	} else if status == Error {
 		logp.Warn(fmt.Sprintf("Could not retrieve a token at this moment; Error:  %v", err))
 	} else {
